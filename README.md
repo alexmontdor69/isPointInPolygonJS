@@ -25,11 +25,15 @@ PointP, polygonVertices, polygoneEdgelines, forceCalculation)
 The modules will return a Json object with the following format
 <code>
 result = {
+	code:'ok',
 	isInside : boolean
 	isOnEdgeLine : boolean
 	isVertex : boolean
+	equations?: Equation[]
 }
 </code>
+
+or an Error message : result.code='err'
 
 ## Input values
 
