@@ -43,11 +43,11 @@ export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResu
         equations= config.polygoneEdgelines!
 
     const beam:Equation = findBeam(equations, pointP)
-console.log ('beam',beam)
+
     let intersectCounter:number = 0
     
     // Check intersections or on egde
-console.log ("pointP", pointP)
+
         for (let index=0; index<equations.length; index++){
             // how many cases
             let positionFound:boolean=false
@@ -60,7 +60,7 @@ console.log ("pointP", pointP)
                 
                 intersectPoint=findIntersect (beam,equations[index])
                 const isOnEdge : boolean|null = isIntersectWithinEdge(intersectPoint, pointM, pointN, 'onX&onY')
-console.log ('intersectPoint',intersectPoint, isOnEdge, )
+
                 if (intersectPoint.x===pointP.x &&intersectPoint.y===pointP.y&&isOnEdge){
                     positionFound = true
                     validReport={
