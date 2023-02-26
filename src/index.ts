@@ -1,4 +1,4 @@
-import { calculateEquation, getEquationType, getIndexNextPoints, isEquationCalculationRequired, isIntersectWithinEdge, isPointPAfterEdge, isVertex } from "./analysis";
+import { calculateEquation, findBeam, findIntersect, getIndexNextPointIndex, isEquationCalculationRequired, isIntersectWithinEdge, isPointPAfterEdge, isVertex } from "./analysis";
 import { ConfigParams, Equation, ErrorResult, Point, ReportResult } from "./types/type";
 
 export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResult {
@@ -35,102 +35,63 @@ export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResu
     let equations:Equation[]=[]
     if (isEquationCalculationRequired(config.polygoneEdgelines, config.forceCalculation)) {
         for (let index=0; index<edgesNumber; index++){
-            const pm=index, pn = getIndexNextPoints(index, edgesNumber)
+            const pm=index, pn = getIndexNextPointIndex(index, edgesNumber)
             equations.push(calculateEquation (polygonVertices[pm], polygonVertices[pn]))
         }
     }
     else
         equations= config.polygoneEdgelines!
 
+    const beam:Equation = findBeam(equations, pointP)
+console.log ('beam',beam)
     let intersectCounter:number = 0
     
-    // the "line" to pointP is horizontal so if intersection then intersectY as pointP.y
-    const intersectY:number= pointP.y
-    
     // Check intersections or on egde
-    for (let index=0; index<equations.length; index++){
-        // how many cases
-        let positionFound:boolean=false
+console.log ("pointP", pointP)
+        for (let index=0; index<equations.length; index++){
+            // how many cases
+            let positionFound:boolean=false
 
-        let intersectPoint:Point
+            let intersectPoint:Point
 
-        const pointM=polygonVertices[index], pointN = polygonVertices[getIndexNextPoints(index, edgesNumber)]
-        
-        if (!isPointPAfterEdge(pointP, pointM,pointN)) {
-            let x:number=0
+            const pointM=polygonVertices[index], pointN = polygonVertices[getIndexNextPointIndex(index, edgesNumber)]
             
-            switch(getEquationType(equations[index])) { 
-                case "horizontal": { 
-                    // Polygon edge is horizontal eq y=b => equation.a is 0
-                    // no intersection has the egde and line to pointP are horizontal => either nothing or on line
-                    intersectPoint = pointP
-                    if (!isIntersectWithinEdge(intersectPoint,pointM,pointN,'onX&onY')) break;
-                    //on the line
-                    positionFound=true
-                    validReport={
-                        code:'ok',
-                        isInside : false,
-                        isOnEdgeLine : true,
-                        isVertex : false}
-                    break; 
-                } 
-                case "vertical": { 
-                    // Polygon edge is vertical eq x=b => equation.a is undefined
-                    // disregard if pointP is "before the edge" => no online or intersect
-                    // otherwise can be online, if in between the segment
-                    // or intersect if in between the segment
-                   x=equations[index].b
-                   if (x>pointP.x) break;
-
-                   intersectPoint = {x, y:intersectY}
-                   if (!isIntersectWithinEdge(intersectPoint,pointM,pointN,'onY')) break;
-
-                   if (x===pointP.x){
+            //if (isPointPAfterEdge(pointP,pointM,pointN)) {
+                
+                intersectPoint=findIntersect (beam,equations[index])
+                const isOnEdge : boolean|null = isIntersectWithinEdge(intersectPoint, pointM, pointN, 'onX&onY')
+console.log ('intersectPoint',intersectPoint, isOnEdge, )
+                if (intersectPoint.x===pointP.x &&intersectPoint.y===pointP.y&&isOnEdge){
                     positionFound = true
                     validReport={
                         code:'ok',
                         isInside : false,
                         isOnEdgeLine : true,
                         isVertex : false}
-                    break;
-                   }
-                   
-                   intersectCounter++
-                    validReport.isInside= (intersectCounter%2)!=0
-                   break; 
-                } 
-                case "y=ax+b":
-                default: { 
-                    //statements;
-                    // polygon segment can be modelized with this eq y = ax+b
-                    // can be online, if in between the segment
-                    // or intersect if in between the segment
-                    x=(intersectY-equations[index].b)/equations[index].a!
-                    if (x>pointP.x) break;
-                    intersectPoint = {x, y:intersectY}
-                    if (!isIntersectWithinEdge(intersectPoint, pointM, pointN, 'onX&onY')) break;
-                    if (x===pointP.x){
-                        positionFound = true
-                        validReport={
-                            code:'ok',
-                            isInside : false,
-                            isOnEdgeLine : true,
-                            isVertex : false}
-                            break;
-                        }
+                        break;
+                }
+                if (intersectPoint.x<pointP.x && isOnEdge){
                     intersectCounter++
-                    validReport.isInside= (intersectCounter%2)!=0
-                    break; 
+                    validReport.isInside= (intersectCounter%2)!=0  
                 } 
-             } 
-
-             if (positionFound) break;
+                if (isOnEdge==null){
+                    const pointO:Point= polygonVertices[getIndexNextPointIndex(index, edgesNumber,2)]
+                    const eq:Equation =calculateEquation (pointM, pointO)
+                    intersectPoint=findIntersect (beam,eq)
+                    if (intersectPoint.x<pointP.x && isIntersectWithinEdge(intersectPoint, pointM, pointO, 'onX&onY')){
+                        intersectCounter++
+                        validReport.isInside= (intersectCounter%2)!=0  
+                    }  
+                }
+                   
+            //} 
         }
+        if (isEquationCalculationRequired(config.polygoneEdgelines, config.forceCalculation)) validReport.equations=equations
+        validReport.intersectCounter=intersectCounter
+        
+        return validReport
 
     }
     
-    if (isEquationCalculationRequired(config.polygoneEdgelines, config.forceCalculation)) validReport.equations=equations
-    
-    return validReport
-}
+
 

@@ -22,7 +22,8 @@ export type ReportResult = {
 	isInside : boolean
 	isOnEdgeLine : boolean
 	isVertex : boolean
-	equations?:Equation[]
+	equations?:Equation[],
+	intersectCounter?:number
 }
 export type ErrorResult = {
     code:'err'
