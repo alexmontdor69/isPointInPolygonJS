@@ -45,7 +45,7 @@ export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResu
     const beam:Equation = findBeam(equations, pointP)
 
     let intersectCounter:number = 0
-    
+    let intersectPoints:Point[]=[]
     // Check intersections or on egde
 
         for (let index=0; index<equations.length; index++){
@@ -73,13 +73,15 @@ export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResu
                 if (intersectPoint.x<pointP.x && isOnEdge){
                     intersectCounter++
                     validReport.isInside= (intersectCounter%2)!=0  
+                    intersectPoints.push(intersectPoint)
                 } 
                 if (isOnEdge==null){
                     const pointO:Point= polygonVertices[getIndexNextPointIndex(index, edgesNumber,2)]
                     const eq:Equation =calculateEquation (pointM, pointO)
-                    intersectPoint=findIntersect (beam,eq)
-                    if (intersectPoint.x<pointP.x && isIntersectWithinEdge(intersectPoint, pointM, pointO, 'onX&onY')){
+                    const intersectPointImaginary=findIntersect (beam,eq)
+                    if (intersectPoint.x<pointP.x && isIntersectWithinEdge(intersectPointImaginary, pointM, pointO, 'onX&onY')){
                         intersectCounter++
+                        intersectPoints.push(intersectPoint)
                         validReport.isInside= (intersectCounter%2)!=0  
                     }  
                 }
@@ -88,6 +90,8 @@ export function isPointInPolygon (config:ConfigParams): ReportResult | ErrorResu
         }
         if (isEquationCalculationRequired(config.polygoneEdgelines, config.forceCalculation)) validReport.equations=equations
         validReport.intersectCounter=intersectCounter
+        validReport.beam=beam
+        validReport.intersectPoints=intersectPoints
         
         return validReport
 
